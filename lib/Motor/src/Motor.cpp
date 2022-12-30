@@ -134,3 +134,28 @@ void PID::print(){
     Serial.print("SP:");
     Serial.println(past_y+past_error);
 }
+
+Motor::Motor(Motor_Pins PINS):
+    pins(PINS), encFaseA(PINS, 0), encFaseB(PINS, 1), hbridge(PINS) {}
+
+double Motor::get_speed(){
+    return (encFaseA.get_speed() - encFaseB.get_speed())/2.0;
+}
+
+void Motor::set_speed(double SETPOINT){
+    setpoint = SETPOINT;
+}
+
+void Motor::begin(void ISRA(), void ISRB()){
+    hbridge.begin();
+    encFaseA.begin(ISRA);
+    encFaseB.begin(ISRB);
+}
+
+void Motor::update(){
+    encFaseA.update();
+    encFaseB.update();
+    double y = get_speed();
+    double u = pid.compute(y, setpoint);
+    hbridge.set_duty_cycle(u);
+}
