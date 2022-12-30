@@ -32,12 +32,12 @@ class HBridgeChannel {
 };
 
 #define pulses_per_revolution 70.0 //Pulses per revolution according encoder's hardware and motor gearbox 
-#define count_pulses_max 10  //Counter used to minimize cpu processor
 
 class EncoderFase {
     private:
         volatile int main_pin; //Pin used in interrupt function
         volatile int supp_pin; //Pin used to get the motor spin way 
+        volatile int max_count = 1; //Cumpute Trigger 
 
         volatile int64_t last_pulse_time; //Variable used as antibouncing, considering the period between each pulse in 4000rpm
         volatile int64_t pasttime; //Variable used to compute motor's speed
@@ -76,6 +76,26 @@ class EncoderFase {
         double get_speed();
 };
 
+class FilteredVariable{
+    private:
+        const double tau; //Time constant
+        int64_t past_time; //Last time compute
+        double y; //Filtered Variable 
+    public:
+        /**
+         @brief Class Constructor
+         @param TAU Time constant 
+        */
+        FilteredVariable(double TAU);
+
+        /**
+         @brief Get the filtered variable
+         @param X New value
+         @return Filtered Variable 
+        */ 
+        double get(double X);
+};
+
 class PID{
     private:
         double kp;  //Proportional Gain
@@ -94,11 +114,11 @@ class PID{
     public:
         /**
          @brief Set controller parameters 
-         @param KP Proportional Gain
-         @param KI Integrative Gain
-         @param KD Derivative Gain
+         @param KC Proportional Gain
+         @param TI Integrative Time
+         @param TD Derivative Gain
         */
-        void set_params(double KP, double KI, double KD);
+        void set_params(double KC, double TI, double TD);
 
         /**
          @brief Compute an iteration of the controller 

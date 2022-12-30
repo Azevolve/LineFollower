@@ -14,7 +14,7 @@ void HBridgeChannel::begin(){
     set_duty_cycle(0);
 }
 
-int HBridgeChannel::set_duty_cycle(double DUTY_CYCLE){
+int HBridgeChannel::set_duty_cycle(double DUTY_CYCLE){    
     if (DUTY_CYCLE == 0){
         digitalWrite(ctrl1, LOW);
         digitalWrite(ctrl2, LOW);
@@ -22,21 +22,21 @@ int HBridgeChannel::set_duty_cycle(double DUTY_CYCLE){
         return 0;
     }
 
-    if (DUTY_CYCLE >  100) DUTY_CYCLE = 100;
-    if (DUTY_CYCLE < -100) DUTY_CYCLE = -100;
-    DUTY_CYCLE *= 40.95;
-
-    if (DUTY_CYCLE > 0){
+    if (DUTY_CYCLE >  100.0) DUTY_CYCLE = 100.0;
+    if (DUTY_CYCLE < -100.0) DUTY_CYCLE = -100.0;
+    
+    int value_pwm = DUTY_CYCLE*40.95;
+    if (value_pwm > 0){
         digitalWrite(ctrl1, HIGH);
         digitalWrite(ctrl2, LOW);
-        ledcWrite(pwm_channel, DUTY_CYCLE);
-        return DUTY_CYCLE;
+        ledcWrite(pwm_channel, value_pwm);
+        return value_pwm;
     } 
-    if (DUTY_CYCLE < 0){
+    if (value_pwm < 0){
         digitalWrite(ctrl1, LOW);
         digitalWrite(ctrl2, HIGH);
-        ledcWrite(pwm_channel, -DUTY_CYCLE);
-        return DUTY_CYCLE;
+        ledcWrite(pwm_channel, -value_pwm);
+        return value_pwm;
     }
     return 0;
 }
@@ -65,7 +65,7 @@ void EncoderFase::interrupt(){
     last_pulse_time = esp_timer_get_time();
 
     count += digitalRead(supp_pin)?1:-1;
-    if ((count == count_pulses_max) || (count == -count_pulses_max) || (count == 0)){
+    if ((abs(count) == max_count) || (count == 0)){
         double delta_time = (esp_timer_get_time() - pasttime)*1e-6;
         double counts_per_second = count/delta_time;
         double omega = counts_per_second/pulses_per_revolution * 60.0;
@@ -73,6 +73,10 @@ void EncoderFase::interrupt(){
         count = 0;
         pasttime = esp_timer_get_time();
     }
+
+    max_count = 10.0*abs(speed)/1000.0;
+    if (max_count < 1) max_count = 1;
+    else if (max_count > 15) max_count = 15;
 }
 
 void EncoderFase::update(){
@@ -80,9 +84,20 @@ void EncoderFase::update(){
     if (delta_time < 20000) return;
     double counts_per_second = count/delta_time;
     double omega = counts_per_second/pulses_per_revolution*60.0;
-    speed = 0.5*speed + 0.5*omega;
+    speed = 0.6*speed + 0.4*omega; //100Hz
     count = 0;
+    max_count = 1;
     pasttime = esp_timer_get_time(); 
+}
+
+FilteredVariable::FilteredVariable(double TAU):
+    tau(TAU){}
+
+double FilteredVariable::get(double X){
+    double delta_time = (esp_timer_get_time()-past_time)*1e-6;
+    double den = delta_time + tau;
+    y = tau/den*y + delta_time/den*X;
+    return y;
 }
 
 double PID::compute(double Y, double SP){
@@ -92,15 +107,15 @@ double PID::compute(double Y, double SP){
 
     P = error*kp;
     I += sat_flag*ki*(error+past_error)/2.0*delta_time;
-    D = 0.5*D + 0.5*(-dy/delta_time*kd);
+    D = 0.9*D + 0.1*(-dy/delta_time*kd); //100Hz
 
     u = P + I + D;
 
-    if(u > 100){
-        u = 100;
+    if(u > 100.0){
+        u = 100.0;
         sat_flag = false;
-    } else if (u < -100){
-        u = -100;
+    } else if (u < -100.0){
+        u = -100.0;
         sat_flag = false;
     }  else {
         sat_flag = true;
@@ -112,10 +127,10 @@ double PID::compute(double Y, double SP){
     return u;
 }
 
-void PID::set_params(double KP, double KI, double KD){
-    kp = KP;
-    ki = KI;
-    kd = KD;
+void PID::set_params(double KC, double TI, double TD){
+    kp = KC;
+    ki = KC/TI;
+    kd = KC*TD;
 }
 
 void PID::print(){
