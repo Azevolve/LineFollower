@@ -4,12 +4,39 @@
 #include "Arduino.h"
 #include "Pinout.h"
 
+class FilteredVariable{
+    private:
+        const double tau; //Time constant
+        int64_t past_time; //Last time compute
+        double y; //Filtered Variable 
+    public:
+        /**
+         @brief Class Constructor
+         @param TAU Time constant 
+        */
+        FilteredVariable(double TAU);
+
+        /**
+         @brief Get the filtered variable
+         @param X New value
+         @return Filtered Variable 
+        */ 
+        double get(double X);
+
+        /**
+         @brief Get the filtered variable, it doesn't update the variable
+         @return Filtered Variable
+        */
+        double get();
+};
+
 class HBridgeChannel {
     private:
         const int ctrl1; //Control Pin 1
         const int ctrl2; // Control Pin 2
         const int pwm_pin; //PWM Pin
         const int pwm_channel; //Channel used in PWM pin
+        int deadzone = 0; //Band which the motor doesn't answer
 
     public:
         /**
@@ -29,6 +56,12 @@ class HBridgeChannel {
          @return Applied value in PWM, it's a value between -4095 and 4095;
         */
         int set_duty_cycle(double DUTY_CYCLE);
+
+        /**
+         @brief Set the deadzone, band which the motor doesn't answer
+         @param PWM_VALUE Min value applicable in PWM 
+        */
+        void set_deadzone(int PWM_VALUE);
 };
 
 #define pulses_per_revolution 70.0 //Pulses per revolution according encoder's hardware and motor gearbox 
@@ -43,7 +76,7 @@ class EncoderFase {
         volatile int64_t pasttime; //Variable used to compute motor's speed
         volatile int count = 0; //Pulse Counter
 
-        volatile double speed; //Motor's speed
+        FilteredVariable speed;
 
     public:
         /**
@@ -76,26 +109,6 @@ class EncoderFase {
         double get_speed();
 };
 
-class FilteredVariable{
-    private:
-        const double tau; //Time constant
-        int64_t past_time; //Last time compute
-        double y; //Filtered Variable 
-    public:
-        /**
-         @brief Class Constructor
-         @param TAU Time constant 
-        */
-        FilteredVariable(double TAU);
-
-        /**
-         @brief Get the filtered variable
-         @param X New value
-         @return Filtered Variable 
-        */ 
-        double get(double X);
-};
-
 class PID{
     private:
         double kp;  //Proportional Gain
@@ -104,14 +117,21 @@ class PID{
 
         double P = 0; //Proportional Partial
         double I = 0; //Integrative Partial 
+        FilteredVariable fD;
         double D = 0; //Derivative Partial
         double u;   //Output value (in percent)
         bool sat_flag = true; //Anti-windup flag
         double past_error = 0;  //previous iteration error 
         double past_time = 0;   //previous iteration time
         double past_y = 0;  //previous iteration controlled variable
+        double error =0;
+        double nf_error = 0;
+        double setpoint = 0;
 
     public:
+
+        PID(double TAU_D = 0.1);
+
         /**
          @brief Set controller parameters 
          @param KC Proportional Gain

@@ -1,5 +1,20 @@
 #include "Motor.h"
 
+FilteredVariable::FilteredVariable(double TAU):
+    tau(TAU){}
+
+double FilteredVariable::get(double X){
+    double delta_time = (esp_timer_get_time()-past_time)*1e-6;
+    past_time = esp_timer_get_time();
+    double den = delta_time + tau;
+    y = tau/den*y + delta_time/den*X;
+    return y;
+}
+
+double FilteredVariable::get(){
+    return y;
+}
+
 HBridgeChannel::HBridgeChannel(Motor_Pins PINS):
     ctrl1(PINS.CTROl_1), ctrl2(PINS.CTROL_2), 
     pwm_pin(PINS.PWM_PIN), pwm_channel(PINS.PWM_CHANNEL) {}
@@ -21,11 +36,11 @@ int HBridgeChannel::set_duty_cycle(double DUTY_CYCLE){
         ledcWrite(pwm_channel, 0);
         return 0;
     }
-
-    if (DUTY_CYCLE >  100.0) DUTY_CYCLE = 100.0;
-    if (DUTY_CYCLE < -100.0) DUTY_CYCLE = -100.0;
     
-    int value_pwm = DUTY_CYCLE*40.95;
+    int value_pwm = DUTY_CYCLE*(4095.0 - deadzone)/100.0 + deadzone;
+    if (value_pwm >  4095) value_pwm = 4095;
+    if (value_pwm < -4095) value_pwm = -4095;
+
     if (value_pwm > 0){
         digitalWrite(ctrl1, HIGH);
         digitalWrite(ctrl2, LOW);
@@ -41,7 +56,11 @@ int HBridgeChannel::set_duty_cycle(double DUTY_CYCLE){
     return 0;
 }
 
-EncoderFase::EncoderFase(Motor_Pins PINS, int FaseNumber){
+void HBridgeChannel::set_deadzone(int PWM_VALUE){
+    deadzone = PWM_VALUE;
+}
+
+EncoderFase::EncoderFase(Motor_Pins PINS, int FaseNumber): speed(0.1){
     if (!FaseNumber){
         main_pin = PINS.ENC_A;
         supp_pin = PINS.ENC_B;
@@ -57,7 +76,7 @@ void EncoderFase::begin(void ISR()){
 }
 
 double EncoderFase::get_speed(){
-    return speed;
+    return speed.get();
 }
 
 void EncoderFase::interrupt(){
@@ -69,45 +88,41 @@ void EncoderFase::interrupt(){
         double delta_time = (esp_timer_get_time() - pasttime)*1e-6;
         double counts_per_second = count/delta_time;
         double omega = counts_per_second/pulses_per_revolution * 60.0;
-        speed = 0.9*speed + 0.1*omega;
+        speed.get(omega);
         count = 0;
         pasttime = esp_timer_get_time();
     }
 
-    max_count = 10.0*abs(speed)/1000.0;
+    max_count = 10.0*abs(speed.get())/1000.0;
     if (max_count < 1) max_count = 1;
     else if (max_count > 15) max_count = 15;
 }
 
 void EncoderFase::update(){
     double delta_time = esp_timer_get_time() - pasttime;
-    if (delta_time < 20000) return;
+    if (delta_time < 10000) return;
     double counts_per_second = count/delta_time;
     double omega = counts_per_second/pulses_per_revolution*60.0;
-    speed = 0.6*speed + 0.4*omega; //100Hz
+    speed.get(omega); 
     count = 0;
     max_count = 1;
     pasttime = esp_timer_get_time(); 
 }
 
-FilteredVariable::FilteredVariable(double TAU):
-    tau(TAU){}
-
-double FilteredVariable::get(double X){
-    double delta_time = (esp_timer_get_time()-past_time)*1e-6;
-    double den = delta_time + tau;
-    y = tau/den*y + delta_time/den*X;
-    return y;
-}
+PID::PID(double TAU_D): 
+    fD(TAU_D){}
 
 double PID::compute(double Y, double SP){
-    double error = SP - Y;
+    static FilteredVariable fil_error(0.01);
+    nf_error = SP-Y;
+    setpoint = SP;
+    error =  fil_error.get(SP - Y);
     double delta_time = (esp_timer_get_time() - past_time)*1e-6;
     double dy = Y-past_y;
 
     P = error*kp;
     I += sat_flag*ki*(error+past_error)/2.0*delta_time;
-    D = 0.9*D + 0.1*(-dy/delta_time*kd); //100Hz
+    D = fD.get(-dy/delta_time*kd);
 
     u = P + I + D;
 
@@ -146,8 +161,14 @@ void PID::print(){
     Serial.print("Y:");
     Serial.print(past_y);
     Serial.print(",");
+    Serial.print("E:");
+    Serial.print(error);
+    Serial.print(",");
+    Serial.print("nfE:");
+    Serial.print(nf_error);
+    Serial.print(",");
     Serial.print("SP:");
-    Serial.println(past_y+past_error);
+    Serial.println(setpoint);
 }
 
 Motor::Motor(Motor_Pins PINS):
@@ -163,8 +184,10 @@ void Motor::set_speed(double SETPOINT){
 
 void Motor::begin(void ISRA(), void ISRB()){
     hbridge.begin();
+    hbridge.set_deadzone(1000);
     encFaseA.begin(ISRA);
     encFaseB.begin(ISRB);
+    pid.set_params(0.5, 0.156, 0.038);
 }
 
 void Motor::update(){
