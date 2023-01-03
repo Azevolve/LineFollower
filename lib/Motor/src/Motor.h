@@ -117,21 +117,17 @@ class PID{
 
         double P = 0; //Proportional Partial
         double I = 0; //Integrative Partial 
-        FilteredVariable fD;
         double D = 0; //Derivative Partial
+
         double u;   //Output value (in percent)
         bool sat_flag = true; //Anti-windup flag
         double past_error = 0;  //previous iteration error 
         double past_time = 0;   //previous iteration time
         double past_y = 0;  //previous iteration controlled variable
-        double error =0;
-        double nf_error = 0;
-        double setpoint = 0;
+        double error = 0; //Actual error 
+        double setpoint = 0; //Setpoint 
 
     public:
-
-        PID(double TAU_D = 0.1);
-
         /**
          @brief Set controller parameters 
          @param KC Proportional Gain

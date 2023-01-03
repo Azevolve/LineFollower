@@ -37,23 +37,20 @@ int HBridgeChannel::set_duty_cycle(double DUTY_CYCLE){
         return 0;
     }
     
-    int value_pwm = DUTY_CYCLE*(4095.0 - deadzone)/100.0 + deadzone;
-    if (value_pwm >  4095) value_pwm = 4095;
-    if (value_pwm < -4095) value_pwm = -4095;
-
-    if (value_pwm > 0){
+    if (DUTY_CYCLE > 0){
         digitalWrite(ctrl1, HIGH);
         digitalWrite(ctrl2, LOW);
-        ledcWrite(pwm_channel, value_pwm);
-        return value_pwm;
-    } 
-    if (value_pwm < 0){
+    } else if (DUTY_CYCLE < 0){
         digitalWrite(ctrl1, LOW);
         digitalWrite(ctrl2, HIGH);
-        ledcWrite(pwm_channel, -value_pwm);
-        return value_pwm;
     }
-    return 0;
+
+    int value_pwm = abs(DUTY_CYCLE)/100.0*(4095.0 - deadzone) + deadzone;
+    if (value_pwm >  4095) value_pwm = 4095;
+    if (value_pwm < 0) value_pwm = 0;
+
+    ledcWrite(pwm_channel, value_pwm);
+    return value_pwm;
 }
 
 void HBridgeChannel::set_deadzone(int PWM_VALUE){
@@ -84,18 +81,18 @@ void EncoderFase::interrupt(){
     last_pulse_time = esp_timer_get_time();
 
     count += digitalRead(supp_pin)?1:-1;
-    if ((abs(count) == max_count) || (count == 0)){
+    if (abs(count) >= max_count){
         double delta_time = (esp_timer_get_time() - pasttime)*1e-6;
         double counts_per_second = count/delta_time;
         double omega = counts_per_second/pulses_per_revolution * 60.0;
         speed.get(omega);
         count = 0;
         pasttime = esp_timer_get_time();
-    }
 
-    max_count = 10.0*abs(speed.get())/1000.0;
-    if (max_count < 1) max_count = 1;
-    else if (max_count > 15) max_count = 15;
+        max_count = abs(speed.get())/100.0;
+        if (max_count < 1) max_count = 1;
+        else if (max_count > 15) max_count = 15;
+    }
 }
 
 void EncoderFase::update(){
@@ -109,23 +106,23 @@ void EncoderFase::update(){
     pasttime = esp_timer_get_time(); 
 }
 
-PID::PID(double TAU_D): 
-    fD(TAU_D){}
-
 double PID::compute(double Y, double SP){
-    static FilteredVariable fil_error(0.01);
-    nf_error = SP-Y;
+    static FilteredVariable fD(0.01);    //Filter applied in derivative partial, 
+    
+    //Read Block
+    error = SP-Y; 
     setpoint = SP;
-    error =  fil_error.get(SP - Y);
     double delta_time = (esp_timer_get_time() - past_time)*1e-6;
     double dy = Y-past_y;
 
+    //Computation Block
     P = error*kp;
     I += sat_flag*ki*(error+past_error)/2.0*delta_time;
     D = fD.get(-dy/delta_time*kd);
 
     u = P + I + D;
 
+    //Saturation Block
     if(u > 100.0){
         u = 100.0;
         sat_flag = false;
@@ -136,6 +133,7 @@ double PID::compute(double Y, double SP){
         sat_flag = true;
     }
 
+    //Update Block
     past_y = Y;
     past_error = error;
     past_time = esp_timer_get_time();
@@ -164,9 +162,6 @@ void PID::print(){
     Serial.print("E:");
     Serial.print(error);
     Serial.print(",");
-    Serial.print("nfE:");
-    Serial.print(nf_error);
-    Serial.print(",");
     Serial.print("SP:");
     Serial.println(setpoint);
 }
@@ -184,10 +179,10 @@ void Motor::set_speed(double SETPOINT){
 
 void Motor::begin(void ISRA(), void ISRB()){
     hbridge.begin();
-    hbridge.set_deadzone(1000);
+    hbridge.set_deadzone(1000);    
     encFaseA.begin(ISRA);
     encFaseB.begin(ISRB);
-    pid.set_params(0.5, 0.156, 0.038);
+    pid.set_params(0.5, 0.140, 0.038);
 }
 
 void Motor::update(){
