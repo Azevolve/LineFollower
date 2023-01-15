@@ -27,7 +27,7 @@ void loop3(void *pV){
 void setup(){
     Serial.begin(115200);
     motor.begin(enc_fase_a, enc_fase_b);
-    motor.pid.set_params(0.3, 0.140, 0.038);
+    motor.pid.set_params(0.3, 0.140, 0.038, 0.01);
     
     xTaskCreatePinnedToCore(
         loop2,

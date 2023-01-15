@@ -6,7 +6,7 @@
 
 class FilteredVariable{
     private:
-        const double tau; //Time constant
+        double tau; //Time constant
         int64_t past_time; //Last time compute
         double y; //Filtered Variable 
     public:
@@ -28,6 +28,12 @@ class FilteredVariable{
          @return Filtered Variable
         */
         double get();
+
+        /**
+         @brief Set Time Constant
+         @param TAU Time Constant
+        */
+        void set(double TAU);
 };
 
 class HBridgeChannel {
@@ -37,6 +43,7 @@ class HBridgeChannel {
         const int pwm_pin; //PWM Pin
         const int pwm_channel; //Channel used in PWM pin
         int deadzone = 0; //Band which the motor doesn't answer
+        double duty_cycle = 0; //Duty Cycle
 
     public:
         /**
@@ -62,6 +69,11 @@ class HBridgeChannel {
          @param PWM_VALUE Min value applicable in PWM 
         */
         void set_deadzone(int PWM_VALUE);
+
+        /**
+         @brief Get the last duty cycle apllied
+        */
+        double get_duty_cycle();
 };
 
 #define pulses_per_revolution 70.0 //Pulses per revolution according encoder's hardware and motor gearbox 
@@ -109,6 +121,16 @@ class EncoderFase {
         double get_speed();
 };
 
+struct Motor_PID_status {
+    double P;
+    double I;
+    double D;
+    double u;
+    bool sat_flag;
+    double error;
+    double setpoint;
+};
+
 class Motor_PID{
     private:
         double kp = 0;  //Proportional Gain
@@ -136,8 +158,9 @@ class Motor_PID{
          @param KC Proportional Gain
          @param TI Integrative Time
          @param TD Derivative Gain
+         @param TAU_D Time Constant Filter of Derivative Partial
         */
-        void set_params(double KC, double TI, double TD);
+        void set_params(double KC, double TI, double TD, double TAU_D);
 
         /**
          @brief Compute an iteration of the controller 
@@ -151,6 +174,17 @@ class Motor_PID{
         */
         void print();
 
+        /**
+         @brief Get last iteration data
+        */
+        Motor_PID_status get();
+
+        /**
+         @brief Set Integrative Partial
+         @param I Integrative Partial
+        */
+        void set_I(double I_);
+
 };
 
 class Motor{
@@ -162,6 +196,7 @@ class Motor{
         EncoderFase encFaseB;   //Encoder Fase B
         HBridgeChannel hbridge; //HBridge Channel used for motor 
         Motor_PID pid;    //Speed Controller 
+        bool controller_enable = true; //Controller Enable
 
         /**
          @brief Class Constructor 
@@ -191,6 +226,12 @@ class Motor{
          @param SETPOINT Speed setpoint, in RPM
         */
         void set_speed(double SETPOINT);
+
+        /**
+         @brief Enable or not the PID controller
+         @param ENABLE True to enable, false to disable
+        */
+        void enable_control(bool ENABLE);
 };
 
 #endif

@@ -15,6 +15,10 @@ double FilteredVariable::get(){
     return y;
 }
 
+void FilteredVariable::set(double TAU){
+    tau = TAU;
+}
+
 HBridgeChannel::HBridgeChannel(Motor_Pins PINS):
     ctrl1(PINS.CTROl_1), ctrl2(PINS.CTROL_2), 
     pwm_pin(PINS.PWM_PIN), pwm_channel(PINS.PWM_CHANNEL) {}
@@ -30,6 +34,7 @@ void HBridgeChannel::begin(){
 }
 
 int HBridgeChannel::set_duty_cycle(double DUTY_CYCLE){    
+    duty_cycle = DUTY_CYCLE;
     if (DUTY_CYCLE == 0){
         digitalWrite(ctrl1, LOW);
         digitalWrite(ctrl2, LOW);
@@ -51,6 +56,10 @@ int HBridgeChannel::set_duty_cycle(double DUTY_CYCLE){
 
     ledcWrite(pwm_channel, value_pwm);
     return value_pwm;
+}
+
+double HBridgeChannel::get_duty_cycle(){
+    return duty_cycle;
 }
 
 void HBridgeChannel::set_deadzone(int PWM_VALUE){
@@ -109,7 +118,6 @@ void EncoderFase::update(){
 Motor_PID::Motor_PID(): fD(0.01){}
 
 double Motor_PID::compute(double Y, double SP){
-    
     //Read Block
     error = SP-Y; 
     setpoint = SP;
@@ -141,10 +149,11 @@ double Motor_PID::compute(double Y, double SP){
     return u;
 }
 
-void Motor_PID::set_params(double KC, double TI, double TD){
+void Motor_PID::set_params(double KC, double TI, double TD, double TAU_D){
     kp = KC;
     ki = KC/TI;
     kd = KC*TD;
+    fD.set(TAU_D);
 }
 
 void Motor_PID::print(){
@@ -165,6 +174,22 @@ void Motor_PID::print(){
     Serial.print(",");
     Serial.print("SP:");
     Serial.println(setpoint);
+}
+
+Motor_PID_status Motor_PID::get(){
+    Motor_PID_status data;
+    data.P = P;
+    data.I = I;
+    data.D = D;
+    data.error = error;
+    data.sat_flag = sat_flag;
+    data.setpoint = setpoint;
+    data.u = u;
+    return data;
+}
+
+void Motor_PID::set_I(double I_){
+    I = I_;
 }
 
 Motor::Motor(Motor_Pins PINS):
@@ -188,7 +213,14 @@ void Motor::begin(void ISRA(), void ISRB()){
 void Motor::update(){
     encFaseA.update();
     encFaseB.update();
+    if (!controller_enable) return;
     double y = get_speed();
     double u = pid.compute(y, setpoint);
     hbridge.set_duty_cycle(u);
+}
+
+void Motor::enable_control(bool ENABLE){
+    controller_enable = ENABLE;
+    if (!controller_enable) return;
+    pid.set_I(hbridge.get_duty_cycle());
 }

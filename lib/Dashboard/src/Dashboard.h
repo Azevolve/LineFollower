@@ -67,9 +67,9 @@ struct lbv_ctrl_data {
     lv_int16_t r_sp;
 
     lv_uint16_t tau_error;
-    lv_uint16_t kp;
-    lv_uint16_t ki;
-    lv_uint16_t kd;
+    lv_uint16_t kc;
+    lv_uint16_t ti;
+    lv_uint16_t td;
     lv_uint16_t tau_d;
     lv_uint16_t speed_ref;
 
@@ -91,9 +91,9 @@ struct esp_ctrl_data {
     double l_sp;
     double r_sp;
     double tau_error;
-    double kp;
-    double ki;
-    double kd;
+    double kc;
+    double ti;
+    double td;
     double tau_d;
     double speed_ref;
 

@@ -30,9 +30,9 @@ void loop() {
     status.r_speed =            commands.l_sp; 
     status.error =              commands.tau_error; 
     status.filtered_error =     commands.tau_d; 
-    status.P =                  commands.kp;
-    status.I =                  commands.ki; 
-    status.D =                  commands.kd; 
+    status.P =                  commands.kc;
+    status.I =                  commands.ti; 
+    status.D =                  commands.td; 
     status.u =                  commands.speed_ref; 
     status.sat_flag =           commands.manual_control; 
     
