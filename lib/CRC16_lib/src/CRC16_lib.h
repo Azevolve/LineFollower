@@ -66,7 +66,7 @@ class CRC {
     /**
      @brief Polinômio usado para o calculo do CRC explicitando a notação +1
     */
-    POLYNOMIAL poly = {byte(POLY/256), byte(POLY), 0b10000000};
+    POLYNOMIAL poly = {{byte(POLY/256), byte(POLY), 0b10000000}};
 
     /**
      @brief Retorna o bit em uma certa posição. Posição 0 = MSB de MESSAGE.infos[0]. Posição 31 = LSB de MESSAGE.infos[3]

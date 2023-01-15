@@ -28,7 +28,7 @@ void EspNow::send(modu_t &DATA){
 EspNow::EspNow(bool ISITCTRL, const uint8_t CTRL_ADDRESS[], const uint8_t MODU_ADDRESS[]): 
      ctrl_macaddress(CTRL_ADDRESS), modu_macaddress(MODU_ADDRESS), IsItCtrl(ISITCTRL){}
 
-void EspNow::set(double R_SP, double L_SP){
+void EspNow::set(double L_SP, double R_SP){
     r_sp = saturation(R_SP);
     l_sp = saturation(L_SP);
 }

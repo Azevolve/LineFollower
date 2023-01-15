@@ -109,11 +109,11 @@ class EncoderFase {
         double get_speed();
 };
 
-class PID{
+class Motor_PID{
     private:
-        double kp;  //Proportional Gain
-        double ki;  //Integrative Gain
-        double kd;  //Derivative Gain
+        double kp = 0;  //Proportional Gain
+        double ki = 0;  //Integrative Gain
+        double kd = 0;  //Derivative Gain
 
         double P = 0; //Proportional Partial
         double I = 0; //Integrative Partial 
@@ -126,8 +126,11 @@ class PID{
         double past_y = 0;  //previous iteration controlled variable
         double error = 0; //Actual error 
         double setpoint = 0; //Setpoint 
+        FilteredVariable fD;    //Filter applied in derivative partial, 
 
     public:
+        Motor_PID();
+
         /**
          @brief Set controller parameters 
          @param KC Proportional Gain
@@ -158,7 +161,7 @@ class Motor{
         EncoderFase encFaseA; //Encoder Fase A
         EncoderFase encFaseB;   //Encoder Fase B
         HBridgeChannel hbridge; //HBridge Channel used for motor 
-        PID pid;    //Speed Controller 
+        Motor_PID pid;    //Speed Controller 
 
         /**
          @brief Class Constructor 

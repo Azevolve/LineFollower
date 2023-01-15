@@ -14,3 +14,9 @@ uint8_t LineSensors::get(){
     }
     return sum;
 }
+
+void LineSensors::get(uint8_t buffer[], int len){
+    for (int i = 0; i < 8; i++){
+        buffer[i] = digitalRead(IR.pins[i]);
+    }
+}

@@ -1,3 +1,4 @@
+#include "Arduino.h"
 //Pinout ESP32 WROOM with 30 pins
 #define  VP 36 //GPI36  Input Only ADC1 RTC-PIN No pullup and pulldown resistors, capacitor between this pin and GPIO37
 #define  VN 39 //GPI39  Input Only ADC1 RTC-PIN No pullup and pulldown resistors, capacitor between this pin and GPIO38
@@ -39,10 +40,16 @@ struct IR_Pins{
 };
 
 //Line Sensor Pins
-const IR_Pins IR_pins = {D13, D14, D27, D26, D25, D33, D32, D22};
+const IR_Pins IR_pins = {VP, VN, D34, D35, D32, D33, D25, D22};
 
 //Left Motor Pins and Channel PWM
-const Motor_Pins LeftMotorPins  = {D21, 0, D15,  D2,  VP,  VN};
+const Motor_Pins LeftMotorPins  = {D21, 0, D2, D13, TX2, RX2};
 
 //Right Motor Pins and Channel PWM
-const Motor_Pins RightMotorPins = {D19, 1, RX2, TX2, D34, D35};
+const Motor_Pins RightMotorPins = {D19, 1, D26, D27, D15, D14};
+
+//Modu ESP Mac Address
+const uint8_t modu_mac[] = {0xC4, 0x4F, 0x33, 0x65, 0xDE, 0x3D}; 
+
+//Ctrl ESP Mac Address
+const uint8_t ctrl_mac[] = {0x3C, 0x61, 0x05, 0x0D, 0x46, 0x80}; 

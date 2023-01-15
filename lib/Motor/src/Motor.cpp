@@ -68,7 +68,7 @@ EncoderFase::EncoderFase(Motor_Pins PINS, int FaseNumber): speed(0.1){
 }
 
 void EncoderFase::begin(void ISR()){
-    pinMode(main_pin, INPUT);
+    pinMode(main_pin, INPUT_PULLDOWN);
     attachInterrupt(main_pin, ISR, RISING);
 }
 
@@ -106,8 +106,9 @@ void EncoderFase::update(){
     pasttime = esp_timer_get_time(); 
 }
 
-double PID::compute(double Y, double SP){
-    static FilteredVariable fD(0.01);    //Filter applied in derivative partial, 
+Motor_PID::Motor_PID(): fD(0.01){}
+
+double Motor_PID::compute(double Y, double SP){
     
     //Read Block
     error = SP-Y; 
@@ -140,13 +141,13 @@ double PID::compute(double Y, double SP){
     return u;
 }
 
-void PID::set_params(double KC, double TI, double TD){
+void Motor_PID::set_params(double KC, double TI, double TD){
     kp = KC;
     ki = KC/TI;
     kd = KC*TD;
 }
 
-void PID::print(){
+void Motor_PID::print(){
     Serial.print("P:");
     Serial.print(P);
     Serial.print(",");
@@ -182,7 +183,6 @@ void Motor::begin(void ISRA(), void ISRB()){
     hbridge.set_deadzone(1000);    
     encFaseA.begin(ISRA);
     encFaseB.begin(ISRB);
-    pid.set_params(0.5, 0.140, 0.038);
 }
 
 void Motor::update(){
