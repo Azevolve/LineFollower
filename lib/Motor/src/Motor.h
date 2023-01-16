@@ -119,6 +119,12 @@ class EncoderFase {
          @return Motor's speed, in rpm
         */
         double get_speed();
+
+        /**
+         @brief Set Time Constant Filter
+         @brief Time Constant
+        */
+        void set_tau(double TAU);
 };
 
 struct Motor_PID_status {

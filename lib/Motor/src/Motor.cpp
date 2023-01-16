@@ -115,6 +115,11 @@ void EncoderFase::update(){
     pasttime = esp_timer_get_time(); 
 }
 
+void EncoderFase::set_tau(double TAU){
+    speed.set(TAU);
+}
+    
+
 Motor_PID::Motor_PID(): fD(0.01){}
 
 double Motor_PID::compute(double Y, double SP){
@@ -205,17 +210,17 @@ void Motor::set_speed(double SETPOINT){
 
 void Motor::begin(void ISRA(), void ISRB()){
     hbridge.begin();
-    hbridge.set_deadzone(1000);    
     encFaseA.begin(ISRA);
     encFaseB.begin(ISRB);
+    hbridge.set_deadzone(250);
 }
 
 void Motor::update(){
     encFaseA.update();
     encFaseB.update();
-    if (!controller_enable) return;
     double y = get_speed();
     double u = pid.compute(y, setpoint);
+    if (!controller_enable) return;
     hbridge.set_duty_cycle(u);
 }
 

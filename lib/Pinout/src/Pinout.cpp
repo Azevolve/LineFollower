@@ -42,9 +42,11 @@ struct IR_Pins{
 //Line Sensor Pins
 const IR_Pins IR_pins = {VP, VN, D34, D35, D32, D33, D25, D22};
 
+//TX2 -> Amarelo // RX2 -> Verde
 //Left Motor Pins and Channel PWM
-const Motor_Pins LeftMotorPins  = {D21, 0, D2, D13, TX2, RX2};
+const Motor_Pins LeftMotorPins  = {D21, 0, D2, D13, TX2, RX2}; 
 
+//D15 ->Verde Fino // D14 -> Verde Grosso
 //Right Motor Pins and Channel PWM
 const Motor_Pins RightMotorPins = {D19, 1, D26, D27, D15, D14};
 

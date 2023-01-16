@@ -4,7 +4,7 @@
 #include "Protocol_LabVIEW_Arduino.h"
 #include "Dashboard.h"
 
-const Motor_Pins motor_pins = {D19, 1, D26, D27, D15, D14};
+const Motor_Pins motor_pins = {D19, 0, D26, D27, D15, D14};
 Motor motor(motor_pins);
 byte buffer[50];
 LABVIEW labview(buffer, sizeof(buffer));
@@ -13,32 +13,46 @@ Dashboard dashboard;
 void enc_fase_a(){motor.encFaseA.interrupt();}
 void enc_fase_b(){motor.encFaseB.interrupt();}
 
-bool manual_control = 0;
+bool manual_control = 1;
+bool control_flag = 0;
 
 void loop2(void *pv){
    labview.begin();
+   motor.enable_control(false);
+   motor.set_speed(0);
+
    while(true){
     if (labview.new_infos()){
         RAW_DATA data = labview.get_data();
         esp_ctrl_data commands = dashboard.get(data);
 
-        double kc = commands.kc;
-        double ti = commands.ti;
-        double td = commands.td;
-        double tau_d = commands.tau_d;
+        double pwm = commands.r_sp;
+        double tau_en = commands.tau_error;
+        motor.encFaseA.set_tau(tau_en);
+        motor.encFaseB.set_tau(tau_en);
 
-        double pwm = commands.r_sp/1500.0;
-        double setpoint = commands.l_sp;
-
-        if (commands.manual_control && (!manual_control))  motor.enable_control(true);
-        if ((!commands.manual_control) && (manual_control)) motor.enable_control(false);
+        if ((!commands.manual_control) && (manual_control)){
+            motor.enable_control(true);
+            control_flag = 1;
+        }
+        if ((commands.manual_control) && (!manual_control)){
+            motor.enable_control(false);
+            control_flag = 0;
+        }
         manual_control = commands.manual_control;
 
-        motor.pid.set_params(kc, ti, td, tau_d);
+        double setpoint = commands.l_sp;
 
         if (manual_control){
+            if(pwm > 100.0) pwm = 100;
+            if(pwm < -100.0) pwm = -100;
             motor.hbridge.set_duty_cycle(pwm);
         } else {
+            double kc = commands.kc;
+            double ti = commands.ti;
+            double td = commands.td;
+            double taud = commands.tau_d;
+            motor.pid.set_params(kc, ti, td, taud);
             motor.set_speed(setpoint);
         }
 
@@ -47,19 +61,24 @@ void loop2(void *pv){
         }
 
         esp_status_data status;
-        Motor_PID_status pid_infos = motor.pid.get();
+        Motor_PID_status pid_status = motor.pid.get();
 
-        status.P = pid_infos.P;
-        status.I = pid_infos.I;
-        status.D = pid_infos.D;
-        status.error = pid_infos.error;
-        status.sat_flag = pid_infos.sat_flag;
-        status.l_sp = pid_infos.setpoint;
-        status.r_sp = pid_infos.setpoint;
-        status.u = pid_infos.u;
+        if (manual_control){
+            status.l_sp = motor.hbridge.get_duty_cycle()*10;
+            status.r_sp = motor.hbridge.get_duty_cycle()*10;
+        } else {
+            status.l_sp = pid_status.setpoint;
+            status.r_sp = pid_status.setpoint;
+        }
 
         status.l_speed = motor.encFaseA.get_speed();
-        status.r_speed = motor.encFaseB.get_speed();
+        status.r_speed = -motor.encFaseB.get_speed();
+        status.sat_flag = pid_status.sat_flag;
+        status.P = pid_status.P;
+        status.I = pid_status.I;
+        status.D = pid_status.D;
+        status.u = pid_status.u;
+        status.error = pid_status.error;
 
         data = dashboard.set(status);
         labview.send_data(data);
@@ -80,7 +99,6 @@ void setup(){
     );
     delay(200);
     motor.begin(enc_fase_a, enc_fase_b);
-
 }
 
 void loop(){
