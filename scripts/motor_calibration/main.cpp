@@ -4,6 +4,13 @@
 #include "Protocol_LabVIEW_Arduino.h"
 #include "Dashboard.h"
 
+/*
+BUGS
+Ruido anormal a altas rotações
+Inconsistencias a rotações próximas a zero
+*/
+
+
 const Motor_Pins motor_pins = {D19, 0, D26, D27, D15, D14};
 Motor motor(motor_pins);
 byte buffer[50];
@@ -43,10 +50,12 @@ void loop2(void *pv){
 
         double setpoint = commands.l_sp;
 
+        int16_t applied_pwm = 0;
+
         if (manual_control){
             if(pwm > 100.0) pwm = 100;
             if(pwm < -100.0) pwm = -100;
-            motor.hbridge.set_duty_cycle(pwm);
+            applied_pwm = motor.hbridge.set_duty_cycle(pwm);
         } else {
             double kc = commands.kc;
             double ti = commands.ti;
@@ -79,6 +88,7 @@ void loop2(void *pv){
         status.D = pid_status.D;
         status.u = pid_status.u;
         status.error = pid_status.error;
+        status.A_ = applied_pwm;
 
         data = dashboard.set(status);
         labview.send_data(data);

@@ -35,22 +35,22 @@ void HBridgeChannel::begin(){
 
 int HBridgeChannel::set_duty_cycle(double DUTY_CYCLE){    
     duty_cycle = DUTY_CYCLE;
-    if (DUTY_CYCLE == 0){
+    if (abs(duty_cycle) <= 3.0){
         digitalWrite(ctrl1, LOW);
         digitalWrite(ctrl2, LOW);
         ledcWrite(pwm_channel, 0);
         return 0;
     }
     
-    if (DUTY_CYCLE > 0){
+    if (duty_cycle > 0){
         digitalWrite(ctrl1, HIGH);
         digitalWrite(ctrl2, LOW);
-    } else if (DUTY_CYCLE < 0){
+    } else if (duty_cycle < 0){
         digitalWrite(ctrl1, LOW);
         digitalWrite(ctrl2, HIGH);
     }
 
-    int value_pwm = abs(DUTY_CYCLE)/100.0*(4095.0 - deadzone) + deadzone;
+    int value_pwm = abs(duty_cycle)/100.0*(4095.0 - deadzone) + deadzone;
     if (value_pwm >  4095) value_pwm = 4095;
     if (value_pwm < 0) value_pwm = 0;
 
@@ -86,7 +86,7 @@ double EncoderFase::get_speed(){
 }
 
 void EncoderFase::interrupt(){
-    if ((esp_timer_get_time() - last_pulse_time) < 215) return;
+    //if ((esp_timer_get_time() - last_pulse_time) < 215) return;
     last_pulse_time = esp_timer_get_time();
 
     count += digitalRead(supp_pin)?1:-1;
