@@ -86,13 +86,15 @@ double EncoderFase::get_speed(){
 }
 
 void EncoderFase::interrupt(){
-    if ((esp_timer_get_time() - last_pulse_time) < 215) return;
+    if ((esp_timer_get_time() - last_pulse_time) < 250) return;
     last_pulse_time = esp_timer_get_time();
 
-    count += digitalRead(supp_pin)?1:-1;
+    //count += digitalRead(supp_pin)?1:-1;
+    count++;
+
     if (abs(count) >= max_count){
-        double delta_time = (esp_timer_get_time() - pasttime)*1e-6;
-        double counts_per_second = count/delta_time;
+        double delta_time = double(esp_timer_get_time() - pasttime)*1e-6;
+        double counts_per_second = double(count)/delta_time;
         double omega = counts_per_second/pulses_per_revolution * 60.0;
         speed.get(omega);
         count = 0;
@@ -119,7 +121,6 @@ void EncoderFase::set_tau(double TAU){
     speed.set(TAU);
 }
     
-
 Motor_PID::Motor_PID(): fD(0.01){}
 
 double Motor_PID::compute(double Y, double SP){
