@@ -66,7 +66,7 @@ void HBridgeChannel::set_deadzone(int PWM_VALUE){
     deadzone = PWM_VALUE;
 }
 
-EncoderFase::EncoderFase(Motor_Pins PINS, int FaseNumber): speed(0.3), wise(0.15){
+EncoderFase::EncoderFase(Motor_Pins PINS, int FaseNumber): speed(0.03), wise(0.15){
     if (!FaseNumber){
         main_pin = PINS.ENC_A;
         supp_pin = PINS.ENC_B;
