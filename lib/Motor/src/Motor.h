@@ -87,8 +87,15 @@ class EncoderFase {
         volatile int64_t last_pulse_time; //Variable used as antibouncing, considering the period between each pulse in 4000rpm
         volatile int64_t pasttime; //Variable used to compute motor's speed
         volatile int count = 0; //Pulse Counter
+         
+        //double wise; 
+
+        //volatile double wise = 0; //ClockWise(1) e or AnticlockWise(-1)
 
         FilteredVariable speed;
+        FilteredVariable wise;
+
+        void add_to_speed(double DELTA_TIME_US);
 
     public:
         /**

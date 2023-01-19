@@ -66,7 +66,7 @@ void HBridgeChannel::set_deadzone(int PWM_VALUE){
     deadzone = PWM_VALUE;
 }
 
-EncoderFase::EncoderFase(Motor_Pins PINS, int FaseNumber): speed(0.1){
+EncoderFase::EncoderFase(Motor_Pins PINS, int FaseNumber): speed(0.3), wise(0.15){
     if (!FaseNumber){
         main_pin = PINS.ENC_A;
         supp_pin = PINS.ENC_B;
@@ -85,20 +85,25 @@ double EncoderFase::get_speed(){
     return speed.get();
 }
 
+void EncoderFase::add_to_speed(double DELTA_TIME_US){
+        double counts_per_second = double(count)/(DELTA_TIME_US*1e-6);
+        double omega = counts_per_second/pulses_per_revolution * 60.0;
+        if (wise.get() < 0.0) omega = -omega;
+        speed.get(omega);
+        count = 0;
+        pasttime = esp_timer_get_time();
+}
+
 void EncoderFase::interrupt(){
     if ((esp_timer_get_time() - last_pulse_time) < 250) return;
     last_pulse_time = esp_timer_get_time();
 
-    //count += digitalRead(supp_pin)?1:-1;
+    wise.get(digitalRead(supp_pin)?1:-1);
     count++;
 
-    if (abs(count) >= max_count){
-        double delta_time = double(esp_timer_get_time() - pasttime)*1e-6;
-        double counts_per_second = double(count)/delta_time;
-        double omega = counts_per_second/pulses_per_revolution * 60.0;
-        speed.get(omega);
-        count = 0;
-        pasttime = esp_timer_get_time();
+    if (count >= max_count){
+        double delta_time = esp_timer_get_time() - pasttime;
+        add_to_speed(delta_time);
 
         max_count = abs(speed.get())/100.0;
         if (max_count < 1) max_count = 1;
@@ -109,12 +114,8 @@ void EncoderFase::interrupt(){
 void EncoderFase::update(){
     double delta_time = esp_timer_get_time() - pasttime;
     if (delta_time < 10000) return;
-    double counts_per_second = count/delta_time;
-    double omega = counts_per_second/pulses_per_revolution*60.0;
-    speed.get(omega); 
-    count = 0;
+    add_to_speed(delta_time);
     max_count = 1;
-    pasttime = esp_timer_get_time(); 
 }
 
 void EncoderFase::set_tau(double TAU){

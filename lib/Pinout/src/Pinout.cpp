@@ -48,6 +48,10 @@ const Motor_Pins LeftMotorPins  = {D21, 0, D2, D13, TX2, RX2};
 
 //D15 ->Verde Fino // D14 -> Verde Grosso
 //Right Motor Pins and Channel PWM
+//Kc = 0.5
+//Ti = 0.1
+//Td = 0.03
+//taud = 0.1
 const Motor_Pins RightMotorPins = {D19, 1, D26, D27, D15, D14};
 
 //Modu ESP Mac Address

@@ -4,11 +4,6 @@
 #include "Protocol_LabVIEW_Arduino.h"
 #include "Dashboard.h"
 
-/*
-BUGS
-Ruido anormal a altas rotações
-Inconsistencias a rotações próximas a zero
-*/
 
 
 const Motor_Pins motor_pins = {D19, 0, D26, D27, D15, D14};
@@ -34,9 +29,9 @@ void loop2(void *pv){
         esp_ctrl_data commands = dashboard.get(data);
 
         double pwm = commands.r_sp;
-        double tau_en = commands.tau_error;
-        motor.encFaseA.set_tau(tau_en);
-        motor.encFaseB.set_tau(tau_en);
+        //double tau_en = commands.tau_error;
+        //motor.encFaseA.set_tau(tau_en);
+        //motor.encFaseB.set_tau(tau_en);
 
         if ((!commands.manual_control) && (manual_control)){
             motor.enable_control(true);
@@ -81,7 +76,7 @@ void loop2(void *pv){
         }
 
         status.l_speed = motor.encFaseA.get_speed();
-        status.r_speed = -motor.encFaseB.get_speed();
+        status.r_speed = motor.encFaseB.get_speed();
         status.sat_flag = pid_status.sat_flag;
         status.P = pid_status.P;
         status.I = pid_status.I;
