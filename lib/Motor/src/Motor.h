@@ -44,6 +44,7 @@ class HBridgeChannel {
         const int pwm_channel; //Channel used in PWM pin
         int deadzone = 0; //Band which the motor doesn't answer
         double duty_cycle = 0; //Duty Cycle
+        int pwm = 0;
 
     public:
         /**
@@ -74,6 +75,11 @@ class HBridgeChannel {
          @brief Get the last duty cycle apllied
         */
         double get_duty_cycle();
+
+        /**
+         @brief Get the last pwm apllied
+        */
+        int get_pwm();
 };
 
 #define pulses_per_revolution 70.0 //Pulses per revolution according encoder's hardware and motor gearbox 
@@ -88,9 +94,6 @@ class EncoderFase {
         volatile int64_t pasttime; //Variable used to compute motor's speed
         volatile int count = 0; //Pulse Counter
          
-        //double wise; 
-
-        //volatile double wise = 0; //ClockWise(1) e or AnticlockWise(-1)
 
         FilteredVariable speed;
         FilteredVariable wise;
@@ -98,6 +101,8 @@ class EncoderFase {
         void add_to_speed(double DELTA_TIME_US);
 
     public:
+        volatile bool motor_turned_on = false;
+
         /**
          @brief Class Constructor 
          @param PINS All motor pins
@@ -132,6 +137,13 @@ class EncoderFase {
          @brief Time Constant
         */
         void set_tau(double TAU);
+
+        /**
+         @brief Set the motor state: 
+         @param TURNEDON = True, if a enought voltage was apllied in Hbridge
+        */
+        void set_motor_state(bool TURNEDON);
+
 };
 
 struct Motor_PID_status {

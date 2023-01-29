@@ -38,6 +38,7 @@ int HBridgeChannel::set_duty_cycle(double DUTY_CYCLE){
     if (abs(duty_cycle) <= 3.0){
         digitalWrite(ctrl1, LOW);
         digitalWrite(ctrl2, LOW);
+        pwm = 0;
         ledcWrite(pwm_channel, 0);
         return 0;
     }
@@ -53,13 +54,17 @@ int HBridgeChannel::set_duty_cycle(double DUTY_CYCLE){
     int value_pwm = abs(duty_cycle)/100.0*(4095.0 - deadzone) + deadzone;
     if (value_pwm >  4095) value_pwm = 4095;
     if (value_pwm < 0) value_pwm = 0;
-
-    ledcWrite(pwm_channel, value_pwm);
-    return value_pwm;
+    pwm = value_pwm;
+    ledcWrite(pwm_channel, pwm);
+    return pwm;
 }
 
 double HBridgeChannel::get_duty_cycle(){
     return duty_cycle;
+}
+
+int HBridgeChannel::get_pwm(){
+    return pwm;
 }
 
 void HBridgeChannel::set_deadzone(int PWM_VALUE){
@@ -86,9 +91,12 @@ double EncoderFase::get_speed(){
 }
 
 void EncoderFase::add_to_speed(double DELTA_TIME_US){
-        double counts_per_second = double(count)/(DELTA_TIME_US*1e-6);
-        double omega = counts_per_second/pulses_per_revolution * 60.0;
-        if (wise.get() < 0.0) omega = -omega;
+        double omega = 0;
+        if(motor_turned_on){
+            double counts_per_second = double(count)/(DELTA_TIME_US*1e-6);
+            omega = counts_per_second/pulses_per_revolution * 60.0;
+            if (wise.get() < 0.0) omega = -omega;
+        }
         speed.get(omega);
         count = 0;
         pasttime = esp_timer_get_time();
@@ -105,9 +113,9 @@ void EncoderFase::interrupt(){
         double delta_time = esp_timer_get_time() - pasttime;
         add_to_speed(delta_time);
 
-        max_count = abs(speed.get())/100.0;
-        if (max_count < 1) max_count = 1;
-        else if (max_count > 15) max_count = 15;
+        max_count = abs(speed.get())/50.0;
+        if (max_count < 7) max_count = 7;
+        else if (max_count > 20) max_count = 20;
     }
 }
 
@@ -115,13 +123,17 @@ void EncoderFase::update(){
     double delta_time = esp_timer_get_time() - pasttime;
     if (delta_time < 10000) return;
     add_to_speed(delta_time);
-    max_count = 1;
+    max_count = 7;
 }
 
 void EncoderFase::set_tau(double TAU){
     speed.set(TAU);
 }
     
+void EncoderFase::set_motor_state(bool TURNEDON){
+    motor_turned_on = TURNEDON;
+}
+
 Motor_PID::Motor_PID(): fD(0.01), fu(0.05){}
 
 double Motor_PID::compute(double Y, double SP){
@@ -218,6 +230,10 @@ void Motor::begin(void ISRA(), void ISRB()){
 }
 
 void Motor::update(){
+    int hbridgevalue = hbridge.get_pwm(); 
+    encFaseA.set_motor_state(hbridgevalue != 0);
+    encFaseB.set_motor_state(hbridgevalue != 0);
+
     encFaseA.update();
     encFaseB.update();
     double y = get_speed();
