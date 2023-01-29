@@ -143,9 +143,12 @@ double Motor_PID::compute(double Y, double SP){
     double delta_time = (esp_timer_get_time() - past_time)*1e-6;
     double dy = Y-past_y;
 
+    //double kp_ = SP<=500?kp/2:kp;
+
     //Computation Block
     P = error*kp;
     I += sat_flag*ki*(error+past_error)/2.0*delta_time;
+    //D = fD.get((error-past_error)/delta_time*kd);
     D = fD.get(-dy/delta_time*kd);
 
     u = P + I + D;
