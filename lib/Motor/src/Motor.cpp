@@ -122,7 +122,7 @@ void EncoderFase::set_tau(double TAU){
     speed.set(TAU);
 }
     
-Motor_PID::Motor_PID(): fD(0.01){}
+Motor_PID::Motor_PID(): fD(0.01), fu(0.05){}
 
 double Motor_PID::compute(double Y, double SP){
     //Read Block
@@ -153,7 +153,7 @@ double Motor_PID::compute(double Y, double SP){
     past_y = Y;
     past_error = error;
     past_time = esp_timer_get_time();
-    return u;
+    return fu.get(u);
 }
 
 void Motor_PID::set_params(double KC, double TI, double TD, double TAU_D){

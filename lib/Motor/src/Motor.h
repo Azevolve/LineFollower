@@ -155,6 +155,7 @@ class Motor_PID{
         double D = 0; //Derivative Partial
 
         double u;   //Output value (in percent)
+        
         bool sat_flag = true; //Anti-windup flag
         double past_error = 0;  //previous iteration error 
         double past_time = 0;   //previous iteration time
@@ -164,6 +165,7 @@ class Motor_PID{
         FilteredVariable fD;    //Filter applied in derivative partial, 
 
     public:
+        FilteredVariable fu; 
         Motor_PID();
 
         /**

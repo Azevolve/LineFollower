@@ -5,8 +5,8 @@
 #include "Dashboard.h"
 
 
-
-const Motor_Pins motor_pins = {D19, 0, D26, D27, D15, D14};
+//{D21, 0, D2, D13, TX2, RX2}
+const Motor_Pins motor_pins = {D21, 0, D2, D13, D25, D33};
 Motor motor(motor_pins);
 byte buffer[50];
 LABVIEW labview(buffer, sizeof(buffer));
@@ -29,9 +29,9 @@ void loop2(void *pv){
         esp_ctrl_data commands = dashboard.get(data);
 
         double pwm = commands.r_sp;
-        //double tau_en = commands.tau_error;
-        //motor.encFaseA.set_tau(tau_en);
-        //motor.encFaseB.set_tau(tau_en);
+        double tau_en = commands.tau_error;
+        motor.encFaseA.set_tau(tau_en);
+        motor.encFaseB.set_tau(tau_en);
 
         if ((!commands.manual_control) && (manual_control)){
             motor.enable_control(true);

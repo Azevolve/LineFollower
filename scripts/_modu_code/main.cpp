@@ -37,11 +37,11 @@ void loop(){
 void loop2(void *Pv){
   delay(200);
   leftmotor.begin(lenc_fase_a, lenc_fase_b);
-  leftmotor.pid.set_params(0.3, 0.140, 0.038);
+  leftmotor.pid.set_params(0.5, 0.1, 0.03, 0.1);
   leftmotor.set_speed(0);
 
   rightmotor.begin(renc_fase_a, renc_fase_b);
-  rightmotor.pid.set_params(0.3, 0.140, 0.02);
+  rightmotor.pid.set_params(0.5, 0.1, 0.03, 0.1);
   rightmotor.set_speed(0);
 
   while (true) {
