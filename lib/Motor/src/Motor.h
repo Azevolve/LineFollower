@@ -146,6 +146,21 @@ class EncoderFase {
 
 };
 
+#define circularbuffersize 100
+class CircularBuffer {
+    private:
+        double buffer[circularbuffersize]; //Buffer
+        int index = 0;  //Write position
+
+    public:
+        /**
+         @brief Add a value in the end of the buffer 
+         @param NEW_VALUE value to be added 
+         @return valeu replaced by the new_value 
+        */
+        double add(double NEW_VALUE);
+};
+
 struct Motor_PID_status {
     double P;
     double I;
@@ -154,10 +169,14 @@ struct Motor_PID_status {
     bool sat_flag;
     double error;
     double setpoint;
+    double gama;
 };
 
 class Motor_PID{
     private:
+        double gama = 0;
+        CircularBuffer abs_de;
+
         double kp = 0;  //Proportional Gain
         double ki = 0;  //Integrative Gain
         double kd = 0;  //Derivative Gain
@@ -177,7 +196,6 @@ class Motor_PID{
         FilteredVariable fD;    //Filter applied in derivative partial, 
 
     public:
-        FilteredVariable fu; 
         Motor_PID();
 
         /**

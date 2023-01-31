@@ -56,25 +56,28 @@ void loop2(void *pv){
             applied_pwmr = right.hbridge.set_duty_cycle(pwm);
         } else {
             double tu = commands.tau_error;
-            left.pid.fu.set(tu);
-            right.pid.fu.set(tu);
+            //left.pid.fu.set(tu);
+            //right.pid.fu.set(tu);
             left.set_speed(setpoint);
-            right.set_speed(setpoint);
+            //right.set_speed(setpoint);
         }
 
         while (labview.new_infos()){
             labview.get_data();
         }
 
+
         esp_status_data status;
         status.l_sp = left.encFaseA.get_speed();
         status.l_speed = -left.encFaseB.get_speed();
+        //status.l_sp = right.pid.get().gama;
 
-        status.r_sp = right.encFaseA.get_speed();
-        status.r_speed = -right.encFaseB.get_speed();
+        //status.r_sp = right.encFaseA.get_speed();
+        //status.r_speed = -right.encFaseB.get_speed();
+        status.r_sp = left.pid.get().gama;
 
-        status.P = left.pid.fu.get();
-        status.I = right.pid.fu.get();
+        //status.P = left.pid.fu.get();
+        //status.I = right.pid.fu.get();
         status.A_ = applied_pwml;
         status.B_ = applied_pwmr;
         status.sat_flag = right.encFaseA.motor_turned_on;

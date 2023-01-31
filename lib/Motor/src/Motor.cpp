@@ -134,7 +134,14 @@ void EncoderFase::set_motor_state(bool TURNEDON){
     motor_turned_on = TURNEDON;
 }
 
-Motor_PID::Motor_PID(): fD(0.01), fu(0.05){}
+double CircularBuffer::add(double NEW_VALUE){
+    index = (index+1)%circularbuffersize;
+    double out_value = buffer[index];
+    buffer[index] =  NEW_VALUE;
+    return out_value;
+}
+
+Motor_PID::Motor_PID(): fD(0.01){}
 
 double Motor_PID::compute(double Y, double SP){
     //Read Block
@@ -143,6 +150,9 @@ double Motor_PID::compute(double Y, double SP){
     double delta_time = (esp_timer_get_time() - past_time)*1e-6;
     double dy = Y-past_y;
 
+    double new_de = abs(error - past_error);
+    double past_de = abs_de.add(new_de);
+    gama = gama + new_de - past_de;
     //double kp_ = SP<=500?kp/2:kp;
 
     //Computation Block
@@ -168,7 +178,7 @@ double Motor_PID::compute(double Y, double SP){
     past_y = Y;
     past_error = error;
     past_time = esp_timer_get_time();
-    return fu.get(u);
+    return u;
 }
 
 void Motor_PID::set_params(double KC, double TI, double TD, double TAU_D){
@@ -207,6 +217,7 @@ Motor_PID_status Motor_PID::get(){
     data.sat_flag = sat_flag;
     data.setpoint = setpoint;
     data.u = u;
+    data.gama = gama;
     return data;
 }
 
