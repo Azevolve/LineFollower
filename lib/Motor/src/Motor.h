@@ -147,18 +147,36 @@ class EncoderFase {
 };
 
 #define circularbuffersize 100
-class CircularBuffer {
+class InstabilityCounter {
     private:
+        double tau = 0;
+        double past_y = 0;
+        int64_t past_time;
+        double gama;
+
         double buffer[circularbuffersize]; //Buffer
         int index = 0;  //Write position
 
     public:
         /**
-         @brief Add a value in the end of the buffer 
-         @param NEW_VALUE value to be added 
-         @return valeu replaced by the new_value 
+         @brief Process the instability level 
+         @param Y actual value of process variable  
+         @return  Instability Counter
         */
-        double add(double NEW_VALUE);
+        double get(double Y);
+        
+        /**
+         @return Instability Counter
+        */
+        double get();
+
+        /**
+         @brief Set Time Constant 
+         @param TAU Time constant
+        */
+        void set(double TAU);
+
+
 };
 
 struct Motor_PID_status {
@@ -174,8 +192,6 @@ struct Motor_PID_status {
 
 class Motor_PID{
     private:
-        double gama = 0;
-        CircularBuffer abs_de;
 
         double kp = 0;  //Proportional Gain
         double ki = 0;  //Integrative Gain
@@ -196,6 +212,7 @@ class Motor_PID{
         FilteredVariable fD;    //Filter applied in derivative partial, 
 
     public:
+        InstabilityCounter instability;
         Motor_PID();
 
         /**

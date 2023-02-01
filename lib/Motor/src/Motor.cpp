@@ -134,11 +134,28 @@ void EncoderFase::set_motor_state(bool TURNEDON){
     motor_turned_on = TURNEDON;
 }
 
-double CircularBuffer::add(double NEW_VALUE){
+double InstabilityCounter::get(double Y){
+    double dy = abs(Y - past_y);
+    double dtime = double(esp_timer_get_time() -  past_time)*(1e-6);
+    past_time = esp_timer_get_time();
+    past_y = Y;
+
+    //Add to circular buffer
     index = (index+1)%circularbuffersize;
-    double out_value = buffer[index];
-    buffer[index] =  NEW_VALUE;
-    return out_value;
+    double past_dy = buffer[index];
+    buffer[index] =  dy;
+
+    gama = gama + (dtime/(tau+dtime))*(dy - past_dy);
+
+    return gama;
+}
+
+double InstabilityCounter::get(){
+    return gama;
+}
+
+void InstabilityCounter::set(double TAU){
+    tau = TAU;
 }
 
 Motor_PID::Motor_PID(): fD(0.01){}
@@ -150,9 +167,7 @@ double Motor_PID::compute(double Y, double SP){
     double delta_time = (esp_timer_get_time() - past_time)*1e-6;
     double dy = Y-past_y;
 
-    double new_de = abs(error - past_error);
-    double past_de = abs_de.add(new_de);
-    gama = gama + new_de - past_de;
+    instability.get(Y);
     //double kp_ = SP<=500?kp/2:kp;
 
     //Computation Block
@@ -217,7 +232,7 @@ Motor_PID_status Motor_PID::get(){
     data.sat_flag = sat_flag;
     data.setpoint = setpoint;
     data.u = u;
-    data.gama = gama;
+    data.gama = instability.get();
     return data;
 }
 

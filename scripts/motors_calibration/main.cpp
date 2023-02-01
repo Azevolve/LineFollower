@@ -53,9 +53,10 @@ void loop2(void *pv){
             if(pwm > 100.0) pwm = 100;
             if(pwm < -100.0) pwm = -100;
             applied_pwml = left.hbridge.set_duty_cycle(pwm);
-            applied_pwmr = right.hbridge.set_duty_cycle(pwm);
+            //applied_pwmr = right.hbridge.set_duty_cycle(pwm);
         } else {
             double tu = commands.tau_error;
+            left.pid.instability.set(tu);
             //left.pid.fu.set(tu);
             //right.pid.fu.set(tu);
             left.set_speed(setpoint);
@@ -74,7 +75,7 @@ void loop2(void *pv){
 
         //status.r_sp = right.encFaseA.get_speed();
         //status.r_speed = -right.encFaseB.get_speed();
-        status.r_sp = left.pid.get().gama;
+        status.r_sp = left.pid.instability.get();
 
         //status.P = left.pid.fu.get();
         //status.I = right.pid.fu.get();
