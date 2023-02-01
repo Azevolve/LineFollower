@@ -17,6 +17,11 @@ class FilteredVariable{
         FilteredVariable(double TAU);
 
         /**
+         @brief Class Constructor. Tau = 0
+        */
+        FilteredVariable();
+
+        /**
          @brief Get the filtered variable
          @param X New value
          @return Filtered Variable 
@@ -150,7 +155,6 @@ class EncoderFase {
 class InstabilityCounter {
     private:
         double past_y = 0; //Past value of Y
-        int64_t past_time; //Time of the past itteration
         double X; //Integral of derivative Y
  
         FilteredVariable gama; //Filtered gama value

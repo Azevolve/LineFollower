@@ -1,5 +1,7 @@
 #include "Motor.h"
 
+FilteredVariable::FilteredVariable(){}
+
 FilteredVariable::FilteredVariable(double TAU):
     tau(TAU){}
 
@@ -136,8 +138,6 @@ void EncoderFase::set_motor_state(bool TURNEDON){
 
 double InstabilityCounter::get(double Y){
     double dy = abs(Y - past_y);
-    double dtime = double(esp_timer_get_time() -  past_time)*(1e-6);
-    past_time = esp_timer_get_time();
     past_y = Y;
 
     //Add to circular buffer
