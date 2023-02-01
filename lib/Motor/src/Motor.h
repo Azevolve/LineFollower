@@ -149,11 +149,11 @@ class EncoderFase {
 #define circularbuffersize 100
 class InstabilityCounter {
     private:
-        double tau = 0;
-        double past_y = 0;
-        int64_t past_time;
-        double gama;
-
+        double past_y = 0; //Past value of Y
+        int64_t past_time; //Time of the past itteration
+        double X; //Integral of derivative Y
+ 
+        FilteredVariable gama; //Filtered gama value
         double buffer[circularbuffersize]; //Buffer
         int index = 0;  //Write position
 

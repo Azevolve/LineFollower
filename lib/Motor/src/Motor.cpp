@@ -145,17 +145,18 @@ double InstabilityCounter::get(double Y){
     double past_dy = buffer[index];
     buffer[index] =  dy;
 
-    gama = gama + (dtime/(tau+dtime))*(dy - past_dy);
+    X = X + dy - past_dy;
+    double value = gama.get(X);
 
-    return gama;
+    return value;
 }
 
 double InstabilityCounter::get(){
-    return gama;
+    return gama.get();
 }
 
 void InstabilityCounter::set(double TAU){
-    tau = TAU;
+    gama.set(TAU);
 }
 
 Motor_PID::Motor_PID(): fD(0.01){}
